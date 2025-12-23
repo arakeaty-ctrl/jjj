@@ -1,9 +1,8 @@
 
-    --==================================================
--- KUN AUTO LION FARM FULL SCRIPT
--- GUI + AUTO FARM + AUTO RIDE + AUTO AVOID (ตรวจจับสิ่งกีดขวาง)
---==================================================
-
+            --==================================================
+-- KUN AUTO LION + GOLDEN LION FARM
+-- GUI + AUTO FARM + AUTO RIDE + AUTO AVOID + JUMP CATCH
+--=================================================
 local Players = game:GetService("Players")
 local PathfindingService = game:GetService("PathfindingService")
 local player = Players.LocalPlayer
@@ -85,7 +84,7 @@ local function createButton(text, posY, description, callback)
     end)
 end
 
--- ปุ่มเปิด/ปิดแต่ละฟังก์ชัน
+-- ปุ่มเมนู
 createButton("AUTO FARM", 0.4, "เปิดระบบอัตโนมัติทั้งหมด\nขี่สิงโต → กิน → อัปเกรด → รีเซ็ต", function()
     AUTO_FARM = not AUTO_FARM
 end)
@@ -102,16 +101,13 @@ openBtn.MouseButton1Click:Connect(function()
     menu.Visible = not menu.Visible
 end)
 
---================= ฟังก์ชัน =================
-
--- ดึงตัวละคร
+--================= ฟังก์ชันหลัก =================
 local function getCharacter()
     local char = player.Character
     if not char then return end
     return char, char:FindFirstChild("Humanoid"), char:FindFirstChild("HumanoidRootPart")
 end
 
--- หาเป้าหมายใกล้สุด
 local function findNearest(name, root)
     local nearest, shortest = nil, SEARCH_DISTANCE
     for _, obj in pairs(workspace:GetChildren()) do
@@ -126,7 +122,6 @@ local function findNearest(name, root)
     return nearest
 end
 
--- เดินด้วย Pathfinding
 local function moveTo(humanoid, root, target)
     local path = PathfindingService:CreatePath(PATH_SETTINGS)
     path:ComputeAsync(root.Position, target)
@@ -143,7 +138,6 @@ local function moveTo(humanoid, root, target)
     end
 end
 
--- ฟังก์ชัน Auto Ride
 local function autoRide()
     for _, p in pairs(workspace:GetDescendants()) do
         if p:IsA("ProximityPrompt") and p.ActionText:lower():find("ride") then
@@ -152,12 +146,10 @@ local function autoRide()
     end
 end
 
--- ฟังก์ชันกระโดด
 local function jump(humanoid)
     humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
 end
 
--- ฟังก์ชันตรวจจับสิ่งกีดขวาง
 local function ตรวจจับสิ่งกีดขวาง(root, ระยะ)
     local rayParams = RaycastParams.new()
     rayParams.FilterDescendantsInstances = {root.Parent}
@@ -169,14 +161,12 @@ local function ตรวจจับสิ่งกีดขวาง(root, ร�
     return false, nil
 end
 
--- ฟังก์ชันหลบสิ่งกีดขวาง
 local function หลบสิ่งกีดขวาง(root)
     local มุม = math.random(30,60)
-    local เลี้ยวซ้าย = math.random(0,1) == 0
-    if เลี้ยวซ้าย then
-        root.CFrame = root.CFrame * CFrame.Angles(0, math.rad(-มุม), 0)
+    if math.random(0,1) == 0 then
+        root.CFrame = root.CFrame * CFrame.Angles(0, math.rad(-มุม),0)
     else
-        root.CFrame = root.CFrame * CFrame.Angles(0, math.rad(มุม), 0)
+        root.CFrame = root.CFrame * CFrame.Angles(0, math.rad(มุม),0)
     end
 end
 
@@ -188,19 +178,28 @@ task.spawn(function()
 
         -- AUTO FARM
         if AUTO_FARM then
-            local lion = findNearest(LION, root)
-            if lion then
-                moveTo(humanoid, root, lion.HumanoidRootPart.Position)
-                if (root.Position - lion.HumanoidRootPart.Position).Magnitude < JUMP_DISTANCE then
+            local target
+            if eaten < TO_EAT then
+                target = findNearest(LION, root)
+            else
+                target = findNearest(GOLDEN_LION, root)
+            end
+
+            if target then
+                moveTo(humanoid, root, target.HumanoidRootPart.Position)
+                if (root.Position - target.HumanoidRootPart.Position).Magnitude < JUMP_DISTANCE then
                     jump(humanoid)
                     if AUTO_RIDE then autoRide() end
+                    if target.Name == LION then
+                        eaten +=1
+                    end
                 end
             end
         end
 
         -- AUTO AVOID
         if AUTO_AVOID then
-            local พบ = ตรวจจับสิ่งกีดขวาง(root, 10)
+            local พบ, obj = ตรวจจับสิ่งกีดขวาง(root, 10)
             if พบ then
                 หลบสิ่งกีดขวาง(root)
             end
