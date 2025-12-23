@@ -191,4 +191,38 @@ task.spawn(function()
             root.CFrame = root.CFrame * CFrame.new(0,0,0.5) * CFrame.Angles(0, math.rad(math.random(-20,20)),0)
         end
     end
+end) 
+-- ตั้งค่าตัวแปร
+local AUTO_AVOID = false
+
+-- สร้างปุ่มใน GUI
+createButton("AUTO AVOID", 0.8, "หลบต้นไม้ หิน และสัตว์อื่น\nเปิด/ปิดอัตโนมัติ", function()
+    AUTO_AVOID = not AUTO_AVOID
+end)
+
+-- ฟังก์ชันหลบสิ่งกีดขวาง
+local function avoidObstacles(root)
+    local rayOrigin = root.Position
+    local rayDirection = root.CFrame.LookVector * 10 -- 10 studs ข้างหน้า
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterDescendantsInstances = {root.Parent} -- ไม่ชนตัวเอง
+    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+
+    local rayResult = workspace:Raycast(rayOrigin, rayDirection, raycastParams)
+    if rayResult then
+        -- พบสิ่งกีดขวาง เลี้ยวซ้ายหรือขวาสุ่ม
+        root.CFrame = root.CFrame * CFrame.Angles(0, math.rad(math.random(30,60)), 0)
+    end
+end
+
+-- Loop หลัก
+task.spawn(function()
+    while task.wait(0.3) do
+        local char, humanoid, root = getCharacter()
+        if not humanoid or not root then continue end
+
+        if AUTO_AVOID then
+            avoidObstacles(root)
+        end
+    end
 end)
